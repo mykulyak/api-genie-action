@@ -1,0 +1,44 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "apigenie-lint",
+      "pattern": [
+        {
+          "regexp": "^(.+?):(\\d+):(\\d+): (.+) \\[(Error|Warning)\\/([^\\]]+)\\]$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4,
+          "severity": 5,
+          "code": 6
+        }
+      ]
+    },
+    {
+      "owner": "apigenie-diff-breaking",
+      "severity": "error",
+      "pattern": [
+        {
+          "regexp": "^(.+?):(\\d+):(\\d+): (.+?)\\s*\\[breaking\\]\\.?$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4
+        }
+      ]
+    },
+    {
+      "owner": "apigenie-diff-non-breaking",
+      "severity": "warning",
+      "pattern": [
+        {
+          "regexp": "^(.+?):(\\d+):(\\d+): (.+?)\\s*\\[non-breaking\\]\\.?$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,178 @@
+name: API Genie
+# The Marketplace shows the description and caps it at 125 characters (`npm run release -- check action`).
+description: Lint, format and detect breaking changes in your API specs, right in your pull requests.
+author: Andriy Mykulyak
+branding:
+  icon: check-circle
+  color: purple
+
+inputs:
+  version:
+    description: >-
+      apigenie version to install: `latest` (the newest release, or the newest pre-release when
+      there is no release yet), `X.Y.Z` or `cli-X.Y.Z`. Ignored with `binary`.
+    default: latest
+  binary:
+    description: Path of an apigenie executable to use instead of downloading a release.
+    default: ""
+  command:
+    description: >-
+      `lint`, `format` (checks the formatting, writes nothing) or `diff`. Empty: only installs
+      apigenie and puts it on PATH.
+    default: ""
+  files:
+    description: >-
+      The files to process, one per line, or separated by spaces on a single line. Glob patterns
+      such as `api/**/*.yaml` are expanded. For `diff`: the new versions of the files.
+    default: ""
+  config:
+    description: Path of the apigenie configuration file (`--config`).
+    default: ""
+  formatter:
+    description: >-
+      Formatter of `lint` and `diff`. The default, `unix`, is turned into annotations on the
+      files; other formatters only print to the log.
+    default: ""
+  report:
+    description: "Report of `diff`: `status`, `changelog` or `detailed`."
+    default: changelog
+  fail-on:
+    description: >-
+      When the step fails: `error` (lint errors, unformatted files, breaking changes), `warning`
+      (lint warnings too) or `never`. Files that can't be read always fail it.
+    default: error
+  base:
+    description: >-
+      For `diff`: the git ref (commit, branch or tag) whose versions of `files` are compared with
+      the current ones. Defaults to the base commit of the pull request, or the commit before the
+      push. Fetched when the checkout doesn't have it.
+    default: ""
+  base-file:
+    description: >-
+      For `diff`: a file to compare the single file of `files` with, instead of `base`.
+    default: ""
+  args:
+    description: Additional arguments of the command, separated by spaces (e.g. `--proto-path protos`).
+    default: ""
+  annotations:
+    description: Whether lint issues and diff changes become annotations of the files.
+    default: "true"
+  summary:
+    description: Whether a report is added to the job summary.
+    default: "true"
+  sarif:
+    description: >-
+      For `lint`: whether the issues are also uploaded to GitHub code scanning as SARIF, where
+      they show in the Security tab and are tracked from run to run. Needs the
+      `security-events: write` permission (and GitHub Advanced Security on private repositories).
+    default: "false"
+  sarif-category:
+    description: >-
+      Category of the SARIF upload; steps that lint different files need different categories.
+    default: apigenie
+  pr-comment:
+    description: >-
+      For `diff` on pull requests: whether the report is posted as a comment, which later runs
+      update in place. Needs the `pull-requests: write` permission; without it, a warning.
+    default: "true"
+  pr-comment-key:
+    description: >-
+      Tells apart the comments of several `diff` steps of a pull request. Defaults to the
+      workflow and job names.
+    default: ""
+  github-token:
+    description: Token the pull request comment is posted with.
+    default: ${{ github.token }}
+
+outputs:
+  version:
+    description: The apigenie version.
+    value: ${{ steps.resolve.outputs.version }}
+  path:
+    description: Path of the apigenie executable.
+    value: ${{ steps.install.outputs.path }}
+  cache-hit:
+    description: Whether apigenie was already in the tool cache.
+    value: ${{ steps.install.outputs.cache-hit }}
+  exit-code:
+    description: Exit status of apigenie (the highest one when it ran several times).
+    value: ${{ steps.run.outputs.exit-code }}
+  status:
+    description: >-
+      lint: `clean`, `warnings` or `errors`; format: `clean` or `changed`; diff: `none`,
+      `non-breaking` or `breaking`.
+    value: ${{ steps.run.outputs.status }}
+  error-count:
+    description: Number of lint errors (with the `unix` formatter).
+    value: ${{ steps.run.outputs.error-count }}
+  warning-count:
+    description: Number of lint warnings (with the `unix` formatter).
+    value: ${{ steps.run.outputs.warning-count }}
+  changed-files:
+    description: The files that are not formatted, one per line (format).
+    value: ${{ steps.run.outputs.changed-files }}
+  sarif-file:
+    description: Path of the SARIF file of the lint issues (lint, with `sarif`).
+    value: ${{ steps.run.outputs.sarif-file }}
+
+runs:
+  using: composite
+  steps:
+    - id: resolve
+      shell: bash
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_BINARY: ${{ inputs.binary }}
+      run: bash "$GITHUB_ACTION_PATH/scripts/resolve.sh"
+
+    - id: install
+      shell: bash
+      env:
+        INPUT_BINARY: ${{ inputs.binary }}
+        APIGENIE_VERSION: ${{ steps.resolve.outputs.version }}
+        APIGENIE_PLATFORM: ${{ steps.resolve.outputs.platform }}
+        APIGENIE_ASSET: ${{ steps.resolve.outputs.asset }}
+        APIGENIE_EXE: ${{ steps.resolve.outputs.exe }}
+      run: bash "$GITHUB_ACTION_PATH/scripts/install.sh"
+
+    - if: inputs.command != '' && inputs.annotations == 'true'
+      shell: bash
+      run: echo "::add-matcher::$GITHUB_ACTION_PATH/problem-matcher.json"
+
+    - id: run
+      if: inputs.command != ''
+      shell: bash
+      env:
+        APIGENIE: ${{ steps.install.outputs.path }}
+        INPUT_COMMAND: ${{ inputs.command }}
+        INPUT_FILES: ${{ inputs.files }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_FORMATTER: ${{ inputs.formatter }}
+        INPUT_REPORT: ${{ inputs.report }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_BASE: ${{ inputs.base }}
+        INPUT_BASE_FILE: ${{ inputs.base-file }}
+        INPUT_ARGS: ${{ inputs.args }}
+        INPUT_SUMMARY: ${{ inputs.summary }}
+        INPUT_SARIF: ${{ inputs.sarif }}
+        INPUT_PR_COMMENT: ${{ inputs.pr-comment }}
+        INPUT_PR_COMMENT_KEY: ${{ inputs.pr-comment-key }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        DEFAULT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        NO_COLOR: "1"
+      run: bash "$GITHUB_ACTION_PATH/scripts/run.sh"
+
+    # also when the lint step failed: that's when the upload matters most
+    - if: ${{ !cancelled() && inputs.command == 'lint' && inputs.sarif == 'true' && steps.run.outputs.sarif-file != '' }}
+      uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+      with:
+        sarif_file: ${{ steps.run.outputs.sarif-file }}
+        category: ${{ inputs.sarif-category }}
+
+    - if: always()
+      shell: bash
+      env:
+        INPUT_COMMAND: ${{ inputs.command }}
+        TELEMETRY_EXISTED: ${{ steps.run.outputs.telemetry-existed }}
+      run: bash "$GITHUB_ACTION_PATH/scripts/cleanup.sh"

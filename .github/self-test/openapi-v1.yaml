@@ -1,0 +1,124 @@
+openapi: 3.1.0
+x-apigenie-lint-disable:
+  - servers-defined
+  - operation-security-defined
+  - operation-tags-defined
+  - operation-rate-limiting-defined
+info:
+  title: Calendar API
+  version: 1.0.0
+  summary: Simple calendar API
+  description: >
+    The simplest calendar API you've ever seen:
+    - single user
+    - single calendar
+    - single event type
+paths:
+  /events:
+    get:
+      operationId: listEvents
+      summary: Retrieves a list of events
+      description: >
+        By default, returns all events. You can filter the results by using query parameters.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+                x-apigenie-lint-disable:
+                  - schema-constraints
+    post:
+      operationId: createEvent
+      summary: Creates a new event
+      description: >
+        The event will be created with the current date and time.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Event"
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+  /events/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The ID of the event
+        required: true
+    get:
+      operationId: getEvent
+      summary: Retrieves a single event by ID
+      description: >
+        If the event does not exist, the server will return a 404 status code.
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+    patch:
+      operationId: updateEvent
+      summary: Updates an existing event
+      description: >
+        The event will be updated with the current date and time.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Event"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+    delete:
+      operationId: deleteEvent
+      summary: Deletes an event
+      description: >
+        If the event does not exist, the server will return a 404 status code.
+      responses:
+        204:
+          description: No Content
+components:
+  schemas:
+    Event:
+      type: object
+      properties:
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        start_at:
+          type: string
+          format: date-time
+        end_at:
+          type: string
+          format: date-time
+        summary:
+          type: string
+          minLength: 3
+          maxLength: 40
+        description:
+          type: string
+          maxLength: 200
+      required:
+        - summary
+        - start_at
+        - end_at
+      additionalProperties: false

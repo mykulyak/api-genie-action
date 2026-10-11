@@ -1,0 +1,78 @@
+name: Self-test
+
+# Installs the latest apigenie release with this action on the three runner systems and uses it
+# on the sample files in .github/self-test. Runs when a version is tagged, and by hand.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: apigenie version to install (latest, or X.Y.Z)
+        default: latest
+
+permissions:
+  contents: read
+
+jobs:
+  self-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install
+        id: install
+        uses: ./
+        with:
+          version: ${{ inputs.version || 'latest' }}
+
+      - name: Run the installed apigenie
+        shell: bash
+        env:
+          VERSION: ${{ steps.install.outputs.version }}
+        run: test "$(apigenie --version)" = "$VERSION"
+
+      - name: Lint
+        id: lint
+        uses: ./
+        with:
+          version: ${{ inputs.version || 'latest' }}
+          command: lint
+          files: .github/self-test/openapi-*.yaml
+          fail-on: never
+
+      - name: Format check
+        id: format
+        uses: ./
+        with:
+          version: ${{ inputs.version || 'latest' }}
+          command: format
+          files: .github/self-test/formatted-*.yaml
+
+      - name: Diff
+        id: diff
+        uses: ./
+        with:
+          version: ${{ inputs.version || 'latest' }}
+          command: diff
+          files: .github/self-test/openapi-v2.yaml
+          base-file: .github/self-test/openapi-v1.yaml
+          fail-on: never
+
+      - name: Check the outputs
+        shell: bash
+        env:
+          CACHE_HIT: ${{ steps.lint.outputs.cache-hit }}
+          LINT: ${{ steps.lint.outputs.status }}
+          FORMAT: ${{ steps.format.outputs.status }}
+          DIFF: ${{ steps.diff.outputs.status }}
+        run: |
+          echo "cache hit: $CACHE_HIT, lint: $LINT, format: $FORMAT, diff: $DIFF"
+          [ "$CACHE_HIT" = true ] && [ -n "$LINT" ] && [ "$FORMAT" = clean ] && [ "$DIFF" = breaking ]
