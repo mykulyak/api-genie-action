@@ -1,0 +1,3 @@
+# The self-test fixtures are compared with the formatter's LF output, and the scripts run in bash,
+# also on Windows runners: keep LF endings on every checkout.
+* text=auto eol=lf
