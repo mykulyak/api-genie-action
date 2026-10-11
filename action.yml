@@ -1,4 +1,4 @@
-name: API Genie
+name: API Genie Action
 # The Marketplace shows the description and caps it at 125 characters (`npm run release -- check action`).
 description: Lint, format and detect breaking changes in your API specs, right in your pull requests.
 author: Andriy Mykulyak

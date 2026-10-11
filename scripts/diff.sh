@@ -110,7 +110,7 @@ for i in "${!new_files[@]}"; do
         if [ -s "$out.md" ]; then
             summary "<details><summary>Changes</summary>" ""
             if [ "${INPUT_SUMMARY:-true}" = true ]; then
-                head -n 300 "$out.md" | head -c 65536 >>"$GITHUB_STEP_SUMMARY"
+                summary_cut "$out.md"
             fi
             summary "" "</details>" ""
             cat "$out.md" >>"$comment_files"

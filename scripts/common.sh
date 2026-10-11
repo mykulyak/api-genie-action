@@ -55,8 +55,18 @@ summary() {
     fi
 }
 
-# Appends a file to the job summary inside a collapsed block, cut to 300 lines and 64 KiB so the
-# summary stays below GitHub's 1 MiB limit
+# Appends the first 300 lines and 64 KiB of a file to the job summary, so the summary stays
+# below GitHub's 1 MiB limit. Two steps rather than `head -n | head -c`: when the file is larger
+# than the pipe buffer, the second head exits first and the first one fails with EPIPE, which
+# pipefail turns into a failed step (seen in the tests, where it came and went with timing).
+summary_cut() {
+    local file=$1
+    head -n 300 "$file" >"$file.cut"
+    head -c 65536 "$file.cut" >>"$GITHUB_STEP_SUMMARY"
+    rm -f "$file.cut"
+}
+
+# Appends a file to the job summary inside a collapsed block, cut to 300 lines and 64 KiB
 summary_details() {
     local title=$1 file=$2 language=${3:-text}
     [ -s "$file" ] || return 0
@@ -64,7 +74,7 @@ summary_details() {
     lines=$(wc -l <"$file")
     summary "<details><summary>$title</summary>" "" "\`\`\`$language"
     if [ "${INPUT_SUMMARY:-true}" = true ] && [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
-        head -n 300 "$file" | head -c 65536 >>"$GITHUB_STEP_SUMMARY"
+        summary_cut "$file"
         # head -c may cut the last line
         [ -z "$(tail -c 1 "$GITHUB_STEP_SUMMARY")" ] || echo >>"$GITHUB_STEP_SUMMARY"
     fi
