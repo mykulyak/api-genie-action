@@ -63,6 +63,9 @@ if [ -n "${INPUT_BINARY:-}" ]; then
     binary=$(unix_path "$INPUT_BINARY")
     [ -f "$binary" ] || fail "The binary '$INPUT_BINARY' does not exist."
     version=$("$binary" --version) || fail "Cannot run '$INPUT_BINARY --version'."
+    # the first line is the version; those of apigenie-generator, apigenie-server and apigenie-catalog follow
+    version=${version%%$'\n'*}
+    version=${version%$'\r'}
     set_output version "$version"
     set_output platform local
     set_output asset ""

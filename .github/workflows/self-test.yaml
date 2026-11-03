@@ -13,6 +13,11 @@ on:
         description: apigenie version to install (latest, or X.Y.Z)
         default: latest
 
+concurrency:
+  # One run per tag or branch; a newer run on the same ref cancels it (v0 and vX.Y.Z are different refs and both run).
+  group: self-test-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -25,7 +30,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
 
       - name: Install
         id: install

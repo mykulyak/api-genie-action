@@ -80,7 +80,8 @@ else
     *) fail "Unknown archive type: $APIGENIE_ASSET" ;;
     esac
     [ -f "$tool_dir.tmp/$APIGENIE_EXE" ] || fail "$APIGENIE_ASSET does not contain $APIGENIE_EXE."
-    # apigenie-generator and apigenie-mock come in the same archive and land on the PATH too
+    # apigenie-generator, apigenie-server and apigenie-catalog
+    # come in the same archive and land on the PATH too
     chmod +x "$tool_dir.tmp"/apigenie*
     touch "$tool_dir.tmp/.complete"
     # an interrupted extraction never leaves a directory that looks complete
@@ -89,6 +90,9 @@ else
 fi
 
 reported=$("$tool_dir/$APIGENIE_EXE" --version) || fail "The installed apigenie does not run."
+# the first line is the version; those of apigenie-generator, apigenie-server and apigenie-catalog follow
+reported=${reported%%$'\n'*}
+reported=${reported%$'\r'}
 [ "$reported" = "$APIGENIE_VERSION" ] ||
     fail "The installed apigenie reports version $reported instead of $APIGENIE_VERSION."
 

@@ -219,8 +219,8 @@ Changes are listed in the [releases](https://github.com/mykulyak/api-genie-actio
 ## Links
 
 - [API Genie](https://apigenie.pl): the documentation of the CLI, its
-  [configuration file](https://apigenie.pl/techdocs/reference/cli-configuration) and
-  [this action](https://apigenie.pl/techdocs/reference/cli-github-action).
+  [configuration file](https://apigenie.pl/docs/reference/cli/configuration) and
+  [this action](https://apigenie.pl/docs/ci/github-action).
 - [CLI releases](https://github.com/mykulyak/api-genie/releases), where the action downloads
   `apigenie` from.
 - [Issues](https://github.com/mykulyak/api-genie-action/issues) of the action.
